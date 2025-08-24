@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Compras</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    button { margin: 5px; padding: 5px 10px; }
+    input { padding: 5px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 3px 0; }
+    table { border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Lista de Compras</h1>
+
+  <input id="item" placeholder="Adicionar item" />
+  <button onclick="adicionar()">Adicionar</button>
+  <button onclick="ordenar()">Ordenar (Bubble Sort)</button>
+
+  <h2>Itens:</h2>
+  <ul id="lista"></ul>
+
+  <h2>Buscar item</h2>
+  <input id="buscarItem" placeholder="Digite o item" />
+  <button onclick="buscar()">Buscar</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    // Atualiza lista na tela
+    async function atualizarLista() {
+      const res = await fetch("/listar");
+      const data = await res.json();
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "";
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        lista.appendChild(li);
+      });
+    }
+
+    // Adiciona item
+    async function adicionar() {
+      const item = document.getElementById("item").value;
+      if (!item) return;
+      await fetch("/adicionar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item })
+      });
+      document.getElementById("item").value = "";
+      atualizarLista();
+    }
+
+    // Ordena lista com Bubble Sort
+    async function ordenar() {
+      const res = await fetch("/ordenar", { method: "POST" });
+      const data = await res.json();
+      document.getElementById("resultado").innerHTML = `
+        <h3>Lista Ordenada</h3>
+        <p>Tempo Bubble Sort: <b>${data.tempo.toFixed(8)}</b> segundos</p>
+      `;
+      atualizarLista();
+    }
+
+    // Busca item (linear + binária)
+    async function buscar() {
+      const item = document.getElementById("buscarItem").value;
+      if (!item) return;
+      const res = await fetch("/buscar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item })
+      });
+      const data = await res.json();
+
+      document.getElementById("resultado").innerHTML = `
+        <h3>Resultado da busca: "${item}"</h3>
+        <table>
+          <tr>
+            <th>Método</th>
+            <th>Posição</th>
+            <th>Tempo (segundos)</th>
+          </tr>
+          <tr>
+            <td>Busca Linear</td>
+            <td>${data.linear.pos !== -1 ? data.linear.pos : "não encontrado"}</td>
+            <td>${data.linear.tempo.toFixed(8)}</td>
+          </tr>
+          <tr>
+            <td>Busca Binária</td>
+            <td>${data.binaria.pos !== -1 ? data.binaria.pos : "não encontrado"}</td>
+            <td>${data.binaria.tempo.toFixed(8)}</td>
+          </tr>
+        </table>
+      `;
+    }
+
+    atualizarLista();
+  </script>
+</body>
+</html>
